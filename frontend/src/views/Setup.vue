@@ -27,6 +27,7 @@ const removeAccount = (a: OwnAccount) => run(() => api.del(`/own-accounts/${a.ib
 const setDefault = (c: Counterparty, v: number | null) => run(() => api.patch(`/counterparties/${c.id}`, { default_category_id: v }))
 const splitAlias = (raw: string) => run(() => api.post('/counterparties/split', { raw_name: raw }))
 const setMapping = (trType: string, v: number | null) => v != null && run(() => api.put(`/type-mappings/${trType}`, { category_id: v }))
+const factoryReset = () => confirm('Factory reset? This deletes all data and cannot be undone.') && run(() => api.post('/reset'))
 const acct = reactive({ iban: '', label: '', income_source: false })
 async function addAccount() {
   if (await run(() => api.put(`/own-accounts/${encodeURIComponent(acct.iban)}`, acct))) Object.assign(acct, { iban: '', label: '', income_source: false })
@@ -255,6 +256,12 @@ async function saveRec(r: Recurring) {
           </tr>
         </tbody>
       </table>
+    </section>
+
+    <section class="block">
+      <header><h2>Factory reset</h2></header>
+      <p class="muted lede">Deletes all imported and manual Transactions, Counterparties, Own Accounts, Recurring Entries, Portfolio Snapshots and your Category changes. Cannot be undone.</p>
+      <button class="danger" type="button" @click="factoryReset">Factory reset</button>
     </section>
   </div>
 </template>

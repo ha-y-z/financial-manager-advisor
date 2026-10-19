@@ -6,9 +6,10 @@ from pydantic import BaseModel
 from sqlalchemy import func, select, update
 
 from ..classify import INBOUND, OUTBOUND, DIRECT_DEBIT, Tree, counterparty_for, norm_iban, recategorize
-from ..db import get_db
+from ..db import Base, get_db
 from ..models import Alias, Category, Counterparty, OwnAccount, RecurringEntry, Transaction, TypeMapping
 from ..recurring import materialize
+from ..seed import seed
 
 router = APIRouter()
 
@@ -303,4 +304,16 @@ def delete_recurring(rid: int, db=Depends(get_db)):
     if r := db.get(RecurringEntry, rid):
         db.delete(r)
     db.commit()
+    return {"ok": True}
+
+
+# --- Factory reset ------------------------------------------------------------
+
+@router.post("/reset")
+def reset(db=Depends(get_db)):
+    """Deletes all data and restores the seeded Categories and type mappings."""
+    for t in reversed(Base.metadata.sorted_tables):  # children before parents
+        db.execute(t.delete())
+    db.commit()
+    seed(db)
     return {"ok": True}

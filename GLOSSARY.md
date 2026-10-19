@@ -30,7 +30,7 @@ The other party in a Transaction, whichever way the money flows. One Counterpart
 _Avoid_: Recipient, sender, payee, merchant
 
 **Alias**:
-A raw name under which a Counterparty appears in bank exports (e.g. "DM-FIL. A1EN" for the Counterparty "dm").
+A raw name under which a Counterparty appears in bank exports (e.g. "DM-FIL. A1EN" for the Counterparty "dm"). It is taken from the Transaction's name, or from its description when the name says too little; never from the export's counterparty name field, which is unreliable.
 _Avoid_: Raw name, variant
 
 **Flow Type**:

@@ -65,6 +65,16 @@ def analytics(client, start="2026-03-01", end="2026-03-31"):
 
 # --- import ---------------------------------------------------------------------
 
+def test_counterparty_from_name_then_description_never_counterparty_name(client):
+    rows = [row("n1", name="REWE Markt 1"), row("n2", name=""), row("n3", name="12345")]
+    rows[1]["description"], rows[2]["description"] = "Spotify AB", "Netflix"
+    for r in rows:
+        r["counterparty_name"] = "Max Mustermann"
+    upload(client, *rows)
+    assert {t["counterparty"] for t in txs(client).values()} == {"REWE Markt", "Spotify AB", "Netflix"}
+    assert "Max Mustermann" not in {c["name"] for c in client.get("/api/counterparties").json()}
+
+
 def test_reimport_is_idempotent_and_keeps_overrides_and_exclusions(client):
     rows = [row("a", amount=-10), row("b", name="Kino", amount=-20), row("c", name="Bar", amount=-5)]
     assert upload(client, *rows).json() == dict(new=3, known=0, uncategorized=3, excluded=0)
@@ -334,3 +344,15 @@ def test_portfolio_mismatch_is_rejected(client):
     assert r.status_code == 422
     assert client.get("/api/portfolio/snapshots").json() == []
     assert import_pdf(client, b"not a pdf").status_code == 422
+
+
+def test_factory_reset_restores_seed(client):
+    defaults = client.get("/api/categories").json()
+    upload(client, row("a"))
+    client.post("/api/categories", json=dict(name="Hobby", parent_id=cat_id(client, "Expense")))
+    client.put(f"/api/own-accounts/{SALARY_IBAN}", json=dict(label="Salary"))
+    import_pdf(client, statement_pdf("31.03.2026", HOLDINGS))
+    assert client.post("/api/reset").status_code == 200
+    for url in ("/api/transactions", "/api/counterparties", "/api/own-accounts", "/api/portfolio/snapshots"):
+        assert client.get(url).json() == []
+    assert [c["path"] for c in client.get("/api/categories").json()] == [c["path"] for c in defaults]

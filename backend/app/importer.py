@@ -1,5 +1,6 @@
 import csv
 import io
+import re
 from datetime import date
 
 from sqlalchemy import select
@@ -8,6 +9,12 @@ from .classify import Tree, counterparty_for, norm_iban, recategorize
 from .models import Transaction
 
 REQUIRED = {"date", "type", "name", "amount", "transaction_id", "description", "counterparty_iban", "mcc_code"}
+
+
+def alias_text(r):
+    """Alias from `name`, or from description when name says too little; `counterparty_name` is unreliable."""
+    name = r["name"].strip()
+    return name if re.search(r"[^\W\d_]{2}", name) else r["description"].strip() or name or r["type"]
 
 
 def import_csv(db, data: bytes):
@@ -34,7 +41,7 @@ def import_csv(db, data: bytes):
         if not t:
             t = existing[r["transaction_id"]] = Transaction(tx_id=r["transaction_id"])
             db.add(t)
-        raw = r["name"] or r["counterparty_name"] or r["description"] or r["type"]
+        raw = alias_text(r)
         t.date, t.amount = values["date"], values["amount"]
         t.raw_name, t.tr_type, t.description = raw, r["type"], r["description"]
         t.mcc, t.iban = r["mcc_code"] or None, norm_iban(r["counterparty_iban"])
