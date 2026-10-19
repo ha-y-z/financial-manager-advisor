@@ -1,0 +1,3 @@
+# Flow Type is the fixed root of the Category tree
+
+Every Transaction must be classified as Income, Expense, Investment Flow or Internal Transfer so that buying ETFs or moving money between Own Accounts never shows up as spending. Rather than storing the Flow Type as a separate field on the Transaction (which could disagree with its Category), the four Flow Types are the undeletable roots of the Category hierarchy, and a Transaction's Flow Type is derived from its Category. The user edits everything below the roots freely (at most two levels), but cannot break the income/spending totals by deleting or renaming a root.
